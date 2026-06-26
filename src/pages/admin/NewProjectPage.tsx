@@ -1,7 +1,43 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../../config/supabase";
 import { type LinkItem } from "../../types/portfolio";
+
+// MICRO-COMPONENTE: Genera l'anteprima una volta sola e pulisce la memoria
+const FilePreview = ({ file, onRemove }: { file: File; onRemove: () => void }) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      // Garbage collection nativa: previene i memory leak e gli errori ORB
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [file]);
+
+  return (
+      <div className="flex items-center justify-between border-4 border-dark p-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {previewUrl ? (
+              <img src={previewUrl} alt={file.name} className="w-12 h-12 object-cover border-2 border-dark flex-shrink-0" />
+          ) : (
+              <div className="w-12 h-12 border-2 border-dark flex items-center justify-center flex-shrink-0 bg-dark/10">
+                <span className="font-black text-xs uppercase">{file.name.split(".").pop()}</span>
+              </div>
+          )}
+          <span className="font-black text-sm truncate">{file.name}</span>
+        </div>
+        <button
+            type="button"
+            onClick={onRemove}
+            className="bg-red-500 text-white px-3 py-1 border-4 border-dark font-black text-sm flex-shrink-0 ml-2"
+        >
+          Rimuovi
+        </button>
+      </div>
+  );
+};
 
 const NewProjectPage = () => {
   const navigate = useNavigate();
@@ -25,7 +61,7 @@ const NewProjectPage = () => {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setAssetFiles(Array.from(e.target.files));
+      setAssetFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
     }
   };
 
@@ -166,24 +202,16 @@ const NewProjectPage = () => {
               <span className="font-black text-sm text-dark/50">Tutti i formati accettati</span>
               <input type="file" multiple onChange={handleFileChange} className="hidden" />
             </label>
+
             {assetFiles.length > 0 && (
                 <div className="flex flex-col gap-2">
+                  <span className="font-black uppercase text-sm text-dark/50">Nuovi file da caricare</span>
                   {assetFiles.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between border-4 border-dark p-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {file.type.startsWith("image/") ? (
-                              <img src={URL.createObjectURL(file)} alt={file.name} className="w-12 h-12 object-cover border-2 border-dark flex-shrink-0" />
-                          ) : (
-                              <div className="w-12 h-12 border-2 border-dark flex items-center justify-center flex-shrink-0 bg-dark/10">
-                                <span className="font-black text-xs uppercase">{file.name.split(".").pop()}</span>
-                              </div>
-                          )}
-                          <span className="font-black text-sm truncate">{file.name}</span>
-                        </div>
-                        <button type="button" onClick={() => setAssetFiles((prev) => prev.filter((_, idx) => idx !== i))} className="bg-red-500 text-white px-3 py-1 border-4 border-dark font-black text-sm flex-shrink-0 ml-2">
-                          Rimuovi
-                        </button>
-                      </div>
+                      <FilePreview
+                          key={`${file.name}-${i}`}
+                          file={file}
+                          onRemove={() => setAssetFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      />
                   ))}
                 </div>
             )}

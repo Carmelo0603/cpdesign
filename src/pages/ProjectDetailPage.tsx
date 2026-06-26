@@ -94,7 +94,7 @@ const ProjectDetailPage = () => {
                   src={images[currentImageIndex]}
                   alt={`${displayTitle} - Asset ${currentImageIndex + 1}`}
                   onLoad={() => setIsImageLoading(false)}
-                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${isImageLoading ? "opacity-0" : "opacity-100"}`}
+                  className={` w-full inset-0 object-cover transition-all duration-500 ${isImageLoading ? "opacity-0" : "opacity-100"}`}
                 />
 
                 {images.length > 1 && !isImageLoading && (

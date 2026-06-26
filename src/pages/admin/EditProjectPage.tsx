@@ -3,6 +3,41 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "../../config/supabase";
 import { type LinkItem } from "../../types/portfolio";
 
+// MICRO-COMPONENTE: Previene gli errori di rete bloccando spam di blob URL
+const FilePreview = ({ file, onRemove }: { file: File; onRemove: () => void }) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [file]);
+
+  return (
+      <div className="flex items-center justify-between border-4 border-dark p-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {previewUrl ? (
+              <img src={previewUrl} alt={file.name} className="w-12 h-12 object-cover border-2 border-dark flex-shrink-0" />
+          ) : (
+              <div className="w-12 h-12 border-2 border-dark flex items-center justify-center flex-shrink-0 bg-dark/10">
+                <span className="font-black text-xs uppercase">{file.name.split(".").pop()}</span>
+              </div>
+          )}
+          <span className="font-black text-sm truncate">{file.name}</span>
+        </div>
+        <button
+            type="button"
+            onClick={onRemove}
+            className="bg-red-500 text-white px-3 py-1 border-4 border-dark font-black text-sm flex-shrink-0 ml-2"
+        >
+          Rimuovi
+        </button>
+      </div>
+  );
+};
+
 const EditProjectPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -64,15 +99,13 @@ const EditProjectPage = () => {
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setNewAssetFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    if (e.target.files && e.target.files.length > 0) {
+      setNewAssetFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
   };
 
   const toggleMarkForRemoval = (url: string) => {
     setUrlsToRemove((prev) => prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]);
-  };
-
-  const handleRemoveNewFile = (indexToRemove: number) => {
-    setNewAssetFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -242,21 +275,11 @@ const EditProjectPage = () => {
                 <div className="flex flex-col gap-2">
                   <span className="font-black uppercase text-sm text-dark/50">Nuovi file da caricare</span>
                   {newAssetFiles.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between border-4 border-dark p-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {file.type.startsWith("image/") ? (
-                              <img src={URL.createObjectURL(file)} alt={file.name} className="w-12 h-12 object-cover border-2 border-dark flex-shrink-0" />
-                          ) : (
-                              <div className="w-12 h-12 border-2 border-dark flex items-center justify-center flex-shrink-0 bg-dark/10">
-                                <span className="font-black text-xs uppercase">{file.name.split(".").pop()}</span>
-                              </div>
-                          )}
-                          <span className="font-black text-sm truncate">{file.name}</span>
-                        </div>
-                        <button type="button" onClick={() => handleRemoveNewFile(i)} className="bg-red-500 text-white px-3 py-1 border-4 border-dark font-black text-sm flex-shrink-0 ml-2">
-                          Rimuovi
-                        </button>
-                      </div>
+                      <FilePreview
+                          key={`${file.name}-${i}`}
+                          file={file}
+                          onRemove={() => setNewAssetFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      />
                   ))}
                 </div>
             )}
