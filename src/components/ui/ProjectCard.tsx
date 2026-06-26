@@ -1,4 +1,4 @@
-import { Project } from "../../types/portfolio";
+import { type Project } from "../../types/portfolio";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 

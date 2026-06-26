@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../config/supabase";
 import { type LinkItem } from "../../types/portfolio";
 
@@ -10,6 +10,7 @@ const FilePreview = ({ file, onRemove }: { file: File; onRemove: () => void }) =
   useEffect(() => {
     if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
     }

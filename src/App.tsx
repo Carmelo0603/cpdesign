@@ -11,6 +11,7 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import NewProjectPage from "./pages/admin/NewProjectPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import EditProjectPage from "./pages/admin/EditProjectPage";
+import {type JSX} from "react";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { session } = useAuth();
