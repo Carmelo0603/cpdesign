@@ -104,9 +104,13 @@ const Header = () => {
           </div>
 
           <div className="p-6 bg-dark">
-            <button className="w-full bg-neon text-dark font-heading font-black text-2xl px-8 py-4 border-4 border-dark shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-              SCARICA CV
-            </button>
+            <a
+                href="https://cyrexymityfwnnqectvm.supabase.co/storage/v1/object/public/portfolio-assets/Carmelo%20Provenzani%20CV.zip"
+                download="Carmelo_Provenzani_CV.zip"
+                className="bg-neon text-dark font-heading font-black text-2xl px-8 py-2 border-4 border-dark shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all block text-center"
+            >
+              DOWNLOAD CV
+            </a>
           </div>
         </div>
       )}
