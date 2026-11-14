@@ -1,71 +1,67 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { lazy, Suspense, type ReactNode } from "react";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import PublicLayout from "./components/layout/PublicLayout";
-import Hero from "./components/sections/Hero";
-import Projects from "./components/sections/Projects";
+import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/ProjectsPage";
-import AboutPage from "./pages/AboutPage";
-import LoginPage from "./pages/LoginPage";
-import AdminLayout from "./components/layout/AdminLayout";
-import DashboardPage from "./pages/admin/DashboardPage";
-import NewProjectPage from "./pages/admin/NewProjectPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
-import EditProjectPage from "./pages/admin/EditProjectPage";
-import {type JSX} from "react";
+import AboutPage from "./pages/AboutPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+// The private area is split out of the public bundle.
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const AdminLayout = lazy(() => import("./components/layout/AdminLayout"));
+const DashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
+const ProjectFormPage = lazy(() => import("./pages/admin/ProjectFormPage"));
+
+const Fallback = () => <div className="min-h-dvh bg-paper" aria-busy="true" />;
+
+const AuthArea = () => (
+  <AuthProvider>
+    <Suspense fallback={<Fallback />}>
+      <Outlet />
+    </Suspense>
+  </AuthProvider>
+);
+
+const Protected = ({ children }: { children: ReactNode }) => {
   const { session } = useAuth();
-
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
+  return session ? children : <Navigate to="/login" replace />;
 };
 
-function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Rotte Pubbliche */}
-          <Route path="/" element={<PublicLayout />}>
-            <Route
-              index
-              element={
-                <>
-                  <Hero />
-                  <Projects />
-                </>
-              }
-            />
-            <Route path="progetti" element={<ProjectsPage />} />
-            <Route path="chisono" element={<AboutPage />} />
-            <Route path="progetti/:id" element={<ProjectDetailPage />} />
-          </Route>
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <PublicLayout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "progetti", element: <ProjectsPage /> },
+      { path: "progetti/:id", element: <ProjectDetailPage /> },
+      { path: "chisono", element: <AboutPage /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+  {
+    element: <AuthArea />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+      {
+        path: "/admin",
+        element: (
+          <Protected>
+            <AdminLayout />
+          </Protected>
+        ),
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: "progetti/nuovo", element: <ProjectFormPage /> },
+          { path: "progetti/modifica/:id", element: <ProjectFormPage /> },
+        ],
+      },
+    ],
+  },
+]);
 
-          {/* Rotta di Login (Senza Header e Footer) */}
-          <Route path="/login" element={<LoginPage />} />
-
-          {/* Rotte Private (Area Admin) */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            {/* L'indice dell'area admin è la Dashboard */}
-            <Route index element={<DashboardPage />} />
-            {/* Inseriremo qui la rotta per creare/modificare i progetti */}
-            <Route path="progetti/modifica/:id" element={<EditProjectPage />} />
-            <Route path="progetti/nuovo" element={<NewProjectPage />} /> <Route path="progetti/:id" element={<ProjectDetailPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  );
-}
+const App = () => <RouterProvider router={router} />;
 
 export default App;

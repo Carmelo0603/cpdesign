@@ -1,117 +1,162 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useId, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { LANGUAGES } from "../../config/i18n";
+import { SITE } from "../../config/site";
+import { useLang } from "../../hooks/usePage";
+import Icon from "../ui/Icon";
+import Wordmark from "../ui/Wordmark";
+
+const LanguageSwitch = ({ onChange, large = false, onDark = false }: { onChange?: () => void; large?: boolean; onDark?: boolean }) => {
+  const { t, i18n } = useTranslation();
+  const lang = useLang();
+  return (
+    <div role="group" aria-label={t("nav.language")} className={`flex items-center ${large ? "gap-6 text-2xl" : "gap-3 text-sm"}`}>
+      {LANGUAGES.map((lng) => (
+        <button
+          key={lng}
+          type="button"
+          lang={lng}
+          aria-pressed={lang === lng}
+          onClick={() => {
+            i18n.changeLanguage(lng);
+            onChange?.();
+          }}
+          className={`font-semibold uppercase transition-colors duration-150 ${
+            onDark
+              ? lang === lng
+                ? "text-sand underline decoration-peach decoration-2 underline-offset-[6px]"
+                : "text-lilac hover:text-sand"
+              : lang === lng
+                ? "text-ink underline decoration-violet decoration-2 underline-offset-[6px]"
+                : "text-ink-3 hover:text-ink"
+          }`}
+        >
+          {lng}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `relative py-1 transition-colors duration-150 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:bg-ink after:transition-transform after:duration-300 after:ease-[var(--ease-out-expo)] hover:after:scale-x-100 ${
+    isActive ? "after:scale-x-100" : "after:scale-x-0"
+  }`;
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const lang = useLang();
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const menuId = useId();
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
+  // Close the mobile menu on navigation
+  const [path, setPath] = useState(location.pathname);
+  if (path !== location.pathname) {
+    setPath(location.pathname);
+    setOpen(false);
+  }
 
-  // Fallback di sicurezza: se la lingua non è ancora caricata, forza l'italiano per evitare crash
-  const currentLang = i18n.language || "it";
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  const links = [
+    { to: "/progetti", label: t("nav.projects") },
+    { to: "/chisono", label: t("nav.about") },
+  ];
 
   return (
-    <header className="border-b-8 border-dark bg-light flex justify-between items-center p-6 lg:px-12 w-full z-50 relative">
-      <Link
-        to="/"
-        className="font-heading font-black text-4xl lg:text-5xl tracking-tighter hover:text-neon hover:bg-dark transition-colors px-2"
-        onClick={() => setIsMenuOpen(false)}
+    <header className="sticky top-0 z-50 border-b border-ink/10 bg-paper/80 text-ink backdrop-blur-md">
+      <a
+        href="#main"
+        className="absolute top-2 left-2 z-[60] -translate-y-20 rounded-full bg-peach px-4 py-2 font-semibold text-night focus:translate-y-0"
       >
-        &lt; CPDESIGN &gt;
-      </Link>
+        {t("nav.skip")}
+      </a>
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[72px] lg:px-10">
+        <Link to="/" aria-label={`CPDESIGN — ${t("nav.home")}`} className="-m-2 p-2">
+          <Wordmark />
+        </Link>
 
-      {/* DESKTOP */}
-      <div className="hidden lg:flex items-center gap-10">
-        <nav className="flex gap-10 font-heading font-black text-xl lg:text-2xl uppercase">
-          <Link to="/progetti" className="hover:text-neon hover:bg-dark px-2 transition-colors">
-            {t("nav_projects")}
-          </Link>
-          <Link to="/chisono" className="hover:text-neon hover:bg-dark px-2 transition-colors">
-            {t("nav_about")}
-          </Link>
+        <nav aria-label={t("nav.main")} className="hidden items-center gap-9 text-[0.9375rem] font-medium md:flex">
+          {links.map((l) => (
+            <NavLink key={l.to} to={l.to} className={navLinkClass} viewTransition>
+              {l.label}
+            </NavLink>
+          ))}
+          <a href="#contatti" className={navLinkClass({ isActive: false })}>
+            {t("nav.contact")}
+          </a>
+          <span aria-hidden="true" className="h-5 w-px bg-ink/20" />
+          <LanguageSwitch />
+          <a
+            href={SITE.cv[lang]}
+            download
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-paper transition-colors duration-200 hover:bg-coral active:scale-[0.97]"
+          >
+            <Icon name="download" size={16} />
+            {t("nav.cv")}
+          </a>
         </nav>
 
-        {/* SWITCH LINGUA DESKTOP */}
-        <div className="flex border-4 border-dark font-heading font-black text-lg uppercase bg-light">
-          <button
-            onClick={() => changeLanguage("it")}
-            className={`px-3 py-1 transition-colors ${currentLang.startsWith("it") ? "bg-dark text-neon" : "hover:bg-neon text-dark"}`}
-          >
-            IT
-          </button>
-          <div className="w-1 bg-dark"></div>
-          <button
-            onClick={() => changeLanguage("en")}
-            className={`px-3 py-1 transition-colors ${currentLang.startsWith("en") ? "bg-dark text-neon" : "hover:bg-neon text-dark"}`}
-          >
-            EN
-          </button>
-        </div>
-
-        <a
-          href="https://cyrexymityfwnnqectvm.supabase.co/storage/v1/object/public/portfolio-assets/Carmelo%20Provenzani%20CV.zip"
-          download="Carmelo_Provenzani_CV.zip"
-          className="bg-neon text-dark font-heading font-black text-2xl px-8 py-2 border-4 border-dark shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all block"
+        <button
+          type="button"
+          className="-mr-2 inline-flex size-11 items-center justify-center md:hidden"
+          aria-expanded={open}
+          aria-controls={menuId}
+          aria-label={open ? t("nav.menuClose") : t("nav.menuOpen")}
+          onClick={() => setOpen((v) => !v)}
         >
-          CV
-        </a>
+          <Icon name={open ? "close" : "menu"} size={24} />
+        </button>
       </div>
 
-      {/* MOBILE: L'hamburger resta visibile fino al breakpoint 'lg' */}
-      <button
-        className="lg:hidden flex flex-col justify-center items-center gap-1.5 p-2 border-4 border-dark hover:bg-neon transition-colors"
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-        aria-label="Menu"
-      >
-        <span className={`block w-8 h-1 bg-dark transition-transform duration-200 ${isMenuOpen ? "rotate-45 translate-y-2.5" : ""}`}></span>
-        <span className={`block w-8 h-1 bg-dark transition-opacity duration-200 ${isMenuOpen ? "opacity-0" : ""}`}></span>
-        <span className={`block w-8 h-1 bg-dark transition-transform duration-200 ${isMenuOpen ? "-rotate-45 -translate-y-2.5" : ""}`}></span>
-      </button>
-
-      {/* MOBILE: Menu a tendina visibile sotto 'lg' */}
-      {isMenuOpen && (
-        <div className="absolute top-full left-0 w-full bg-light border-b-8 border-dark flex flex-col font-heading font-black text-2xl uppercase lg:hidden shadow-brutal z-40">
-          <Link to="/progetti" className="p-6 border-b-4 border-dark hover:bg-neon hover:text-dark transition-colors" onClick={() => setIsMenuOpen(false)}>
-            {t("nav_projects")}
-          </Link>
-          <Link to="/chisono" className="p-6 border-b-4 border-dark hover:bg-neon hover:text-dark transition-colors" onClick={() => setIsMenuOpen(false)}>
-            {t("nav_about")}
-          </Link>
-
-          {/* SWITCH LINGUA MOBILE */}
-          <div className="p-6 border-b-4 border-dark flex gap-4">
-            <button
-              onClick={() => {
-                changeLanguage("it");
-                setIsMenuOpen(false);
-              }}
-              className={`flex-1 border-4 border-dark py-2 font-heading font-black transition-colors ${currentLang.startsWith("it") ? "bg-dark text-neon" : "hover:bg-neon text-dark"}`}
-            >
-              IT
-            </button>
-            <button
-              onClick={() => {
-                changeLanguage("en");
-                setIsMenuOpen(false);
-              }}
-              className={`flex-1 border-4 border-dark py-2 font-heading font-black transition-colors ${currentLang.startsWith("en") ? "bg-dark text-neon" : "hover:bg-neon text-dark"}`}
-            >
-              EN
-            </button>
-          </div>
-
-          <div className="p-6 bg-dark">
+      {open && (
+        <div id={menuId} className="on-blue menu-reveal fixed inset-x-0 top-16 bottom-0 flex h-[calc(100dvh-4rem)] flex-col overflow-y-auto bg-violet px-4 pt-6 pb-8 text-sand sm:px-6 md:hidden">
+          <nav aria-label={t("nav.main")} className="flex flex-col">
+            {links.map((l, i) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                viewTransition
+                onClick={() => setOpen(false)}
+                className="fade-in condensed flex items-center justify-between border-b border-sand/25 py-5 text-[2.75rem] leading-none"
+                style={{ ["--delay" as string]: `${60 + i * 50}ms` }}
+              >
+                {l.label}
+                <Icon name="arrowRight" size={24} />
+              </Link>
+            ))}
             <a
-                href="https://cyrexymityfwnnqectvm.supabase.co/storage/v1/object/public/portfolio-assets/Carmelo%20Provenzani%20CV.zip"
-                download="Carmelo_Provenzani_CV.zip"
-                className="bg-neon text-dark font-heading font-black text-2xl px-8 py-2 border-4 border-dark shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all block text-center"
+              href="#contatti"
+              onClick={() => setOpen(false)}
+              className="fade-in condensed flex items-center justify-between border-b border-sand/25 py-5 text-[2.75rem] leading-none"
+              style={{ ["--delay" as string]: "160ms" }}
             >
-              DOWNLOAD CV
+              {t("nav.contact")}
+              <Icon name="arrowRight" size={24} />
             </a>
+          </nav>
+          <div className="mt-8 flex items-center justify-between">
+            <LanguageSwitch large onDark onChange={() => setOpen(false)} />
           </div>
+          <a
+            href={SITE.cv[lang]}
+            download
+            className="mt-auto inline-flex h-14 items-center justify-center gap-3 rounded-full bg-sand text-base font-semibold text-night active:scale-[0.98]"
+          >
+            <Icon name="download" size={18} />
+            {t("nav.cv")}
+          </a>
         </div>
       )}
     </header>

@@ -1,194 +1,266 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { supabase } from "../config/supabase";
-import { type Project } from "../types/portfolio";
+import { useState, type KeyboardEvent } from "react";
+import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useProject, useProjects } from "../hooks/useProjects";
+import { useDocumentTitle, useLang } from "../hooks/usePage";
+import { isImageUrl, localize, vtName } from "../lib/projects";
+import { ButtonAnchor, ButtonLink } from "../components/ui/Button";
+import Icon from "../components/ui/Icon";
+import Img from "../components/ui/Img";
+import Tag from "../components/ui/Tag";
+import { TONE_BG, toneAt, type Tone } from "../lib/tone";
+import { Container, StatusBlock } from "../components/ui/Section";
 
-const ProjectDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { i18n } = useTranslation();
+const fileName = (url: string) => decodeURIComponent(url.split("/").pop()?.split("?")[0] ?? url);
 
-  // FIX: applichiamo il fallback anche qui per sicurezza
-  const currentLang = i18n.language || "it";
-  const isEn = currentLang.startsWith("en");
+const Gallery = ({ id, images, title, tone }: { id: string; images: string[]; title: string; tone: Tone }) => {
+  const { t } = useTranslation();
+  const pictures = images.filter(isImageUrl);
+  const files = images.filter((u) => !isImageUrl(u));
+  const [index, setIndex] = useState(0);
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({});
+  const total = pictures.length;
+  const go = (delta: number) => setIndex((i) => (i + delta + total) % total);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isImageLoading, setIsImageLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSingleProject = async () => {
-      const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
-
-      if (data) setProject(data);
-      if (error) console.error(error);
-      setLoading(false);
-    };
-
-    if (id) fetchSingleProject();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center font-heading font-black text-4xl uppercase animate-pulse">
-        Estrazione logica di progetto...
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="font-heading font-black text-6xl text-red-500 mb-8 uppercase">Progetto non trovato</h1>
-        <Link to="/progetti" className="font-heading font-black text-2xl uppercase border-4 border-dark p-4 hover:bg-neon hover:shadow-brutal transition-all">
-          &larr; Torna all'archivio
-        </Link>
-      </div>
-    );
-  }
-
-  // --- LOGICA DI TRADUZIONE DINAMICA ---
-  // Se siamo in EN e il campo EN esiste, usalo. Altrimenti usa l'IT.
-  const displayTitle = isEn && project.title_en ? project.title_en : project.title;
-  const displayCategory = isEn && project.category_en ? project.category_en : project.category;
-  const displayDescription =
-    isEn && project.description_en ? project.description_en : project.description || "Nessuna descrizione strutturale fornita per questo progetto.";
-  const displayLinks = isEn && project.links_en && project.links_en.length > 0 ? project.links_en : project.links || [];
-
-  const images = project.image_urls && project.image_urls.length > 0 ? project.image_urls : project.image_url ? [project.image_url] : [];
-
-  const nextImage = () => {
-    setIsImageLoading(true);
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  const onKey = (e: KeyboardEvent) => {
+    if (total < 2) return;
+    if (e.key === "ArrowRight") go(1);
+    if (e.key === "ArrowLeft") go(-1);
   };
 
-  const prevImage = () => {
-    setIsImageLoading(true);
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  if (total === 0 && files.length === 0) {
+    return <div className="flex aspect-[4/3] items-center justify-center bg-paper-2 text-ink-3">{t("detail.noImages")}</div>;
+  }
+
+  const current = pictures[index];
 
   return (
-    <div className="min-h-screen bg-light flex flex-col w-full">
-      <div className="border-b-8 border-dark p-6 md:px-12 md:py-16 bg-neon flex flex-col items-start gap-4">
-        <span className="font-heading font-black text-2xl md:text-3xl text-light bg-dark px-4 py-1 border-4 border-dark uppercase shadow-brutal">
-          {displayCategory}
-        </span>
-        <h1 className="font-heading font-black text-5xl md:text-8xl uppercase tracking-tighter text-dark leading-[0.85] m-0">{displayTitle}</h1>
-      </div>
-
-      <div className="flex flex-col lg:flex-row w-full flex-grow">
-        <div className="w-full lg:w-2/3 border-b-8 lg:border-b-0 lg:border-r-8 border-dark bg-dark flex flex-col relative min-h-[50vh]">
-          {images.length > 0 ? (
+    <div className="flex flex-col gap-4">
+      {current && (
+        <div
+          role="region"
+          aria-roledescription="carousel"
+          aria-label={t("detail.gallery")}
+          tabIndex={total > 1 ? 0 : -1}
+          onKeyDown={onKey}
+          className={`relative flex items-center justify-center overflow-hidden ${TONE_BG[tone]} p-[4%] ${loaded[current] ? "" : "aspect-[16/10]"}`}
+        >
+          {!loaded[current] && <div className="skeleton absolute inset-0" aria-hidden="true" />}
+          <Img
+            key={current}
+            src={current}
+            sizes="(min-width: 1024px) 64vw, 100vw"
+            alt={t("detail.imageOf", { current: index + 1, total }) + ` — ${title}`}
+            onLoad={() => setLoaded((l) => ({ ...l, [current]: true }))}
+            className={`relative block h-auto max-h-[78vh] w-auto max-w-full object-contain transition-[opacity,filter] duration-500 ease-[var(--ease-out-expo)] ${
+              loaded[current] ? "opacity-100 blur-0" : "opacity-0 blur-sm"
+            }`}
+            style={index === 0 ? { viewTransitionName: vtName(id) } : undefined}
+          />
+          {total > 1 && (
             <>
-              <div className="flex-grow relative overflow-hidden flex items-center justify-center bg-dark">
-                {isImageLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-dark">
-                    <span className="font-heading font-black text-3xl md:text-5xl text-neon uppercase animate-pulse border-4 border-neon p-4">
-                      [ LETTURA ASSET ]
-                    </span>
-                  </div>
-                )}
-
-                <img
-                  src={images[currentImageIndex]}
-                  alt={`${displayTitle} - Asset ${currentImageIndex + 1}`}
-                  onLoad={() => setIsImageLoading(false)}
-                  className={` w-full inset-0 object-cover transition-all duration-500 ${isImageLoading ? "opacity-0" : "opacity-100"}`}
-                />
-
-                {images.length > 1 && !isImageLoading && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute top-0 left-0 w-1/2 h-full z-20 cursor-w-resize bg-transparent focus:outline-none active:bg-light/5 transition-colors"
-                      title="Immagine precedente"
-                      aria-label="Immagine precedente"
-                    />
-                    <button
-                      onClick={nextImage}
-                      className="absolute top-0 right-0 w-1/2 h-full z-20 cursor-e-resize bg-transparent focus:outline-none active:bg-light/5 transition-colors"
-                      title="Immagine successiva"
-                      aria-label="Immagine successiva"
-                    />
-                  </>
-                )}
-              </div>
-
-              {images.length > 1 && (
-                <div className="flex justify-between items-center bg-light border-t-8 border-dark p-4 md:p-6 font-heading font-black text-xl md:text-2xl uppercase">
-                  <button
-                    onClick={prevImage}
-                    className="hover:text-neon hover:bg-dark hover:translate-x-[-4px] px-6 py-2 border-4 border-dark transition-all shadow-brutal hover:shadow-none"
-                  >
-                    &larr; Prev
-                  </button>
-                  <span className="bg-dark text-neon px-6 py-2 border-4 border-dark">
-                    [ {currentImageIndex + 1} / {images.length} ]
-                  </span>
-                  <button
-                    onClick={nextImage}
-                    className="hover:text-neon hover:bg-dark hover:translate-x-[4px] px-6 py-2 border-4 border-dark transition-all shadow-brutal hover:shadow-none"
-                  >
-                    Next &rarr;
-                  </button>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => go(-1)}
+                aria-label={t("detail.prev")}
+                className="absolute top-1/2 left-3 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-paper text-ink transition-colors duration-150 hover:bg-ink hover:text-paper active:scale-95 md:left-5"
+              >
+                <Icon name="arrowLeft" />
+              </button>
+              <button
+                type="button"
+                onClick={() => go(1)}
+                aria-label={t("detail.next")}
+                className="absolute top-1/2 right-3 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-paper text-ink transition-colors duration-150 hover:bg-ink hover:text-paper active:scale-95 md:right-5"
+              >
+                <Icon name="arrowRight" />
+              </button>
             </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-neon opacity-20 flex-grow">
-              <span className="font-heading font-black text-6xl uppercase text-center px-4">
-                Nessun asset
-                <br />
-                visivo allegato
-              </span>
+          )}
+        </div>
+      )}
+
+      {total > 1 && (
+        <div className="flex items-center gap-4">
+          <ol className="flex flex-1 gap-2 overflow-x-auto pb-1">
+            {pictures.map((src, i) => (
+              <li key={src} className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIndex(i)}
+                  aria-label={t("detail.imageOf", { current: i + 1, total })}
+                  aria-current={i === index}
+                  className={`block h-16 w-20 overflow-hidden border-2 transition-[border-color,opacity] duration-150 ${
+                    i === index ? "border-ink opacity-100" : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <Img src={src} sizes="80px" alt="" loading="lazy" className="size-full object-cover" />
+                </button>
+              </li>
+            ))}
+          </ol>
+          <p className="shrink-0 text-sm font-semibold tabular-nums" aria-live="polite">
+            {index + 1} / {total}
+          </p>
+        </div>
+      )}
+
+      {files.length > 0 && (
+        <ul className="flex flex-col border-t border-rule">
+          {files.map((url) => (
+            <li key={url} className="border-b border-rule">
+              <a href={url} target="_blank" rel="noreferrer" className="group flex items-center gap-3 py-3 text-[0.9375rem] font-medium hover:text-violet">
+                <Icon name="file" size={18} />
+                <span className="min-w-0 flex-1 truncate">{fileName(url)}</span>
+                <span className="text-sm text-ink-3">{t("detail.file")}</span>
+                <Icon name="arrowUpRight" size={16} />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+const Detail = ({ id }: { id: string }) => {
+  const { t } = useTranslation();
+  const lang = useLang();
+  const { project, status } = useProject(id);
+  const { projects } = useProjects();
+  const p = project ? localize(project, lang) : null;
+  useDocumentTitle(p ? `${p.title} — Carmelo Provenzani` : undefined);
+
+  if (status === "loading" && !p) {
+    return (
+      <Container className="grid gap-10 py-12 lg:grid-cols-12">
+        <div className="skeleton aspect-[16/10] lg:col-span-12" />
+        <div className="flex flex-col gap-3 lg:col-span-8">
+          <div className="skeleton h-4 w-1/3" />
+          <div className="skeleton h-12 w-4/5" />
+          <div className="skeleton mt-6 h-40" />
+        </div>
+      </Container>
+    );
+  }
+
+  if (!p) {
+    return (
+      <Container className="py-16">
+        <StatusBlock
+          action={
+            <ButtonLink to="/progetti" variant="outline" icon="arrowRight">
+              {t("detail.back")}
+            </ButtonLink>
+          }
+        >
+          {t("detail.notFound")}
+        </StatusBlock>
+      </Container>
+    );
+  }
+
+  const i = projects.findIndex((x) => x.id === id);
+  const next = i >= 0 && projects.length > 1 ? localize(projects[(i + 1) % projects.length], lang) : null;
+
+  const paragraphs = (p.description || t("detail.noDescription"))
+    .split(/\n+/)
+    .map((para) => para.trim())
+    .filter(Boolean);
+  const [lede, ...body] = paragraphs;
+
+  return (
+    <article>
+      <Container className="pt-6 md:pt-8">
+        <Link to="/progetti" viewTransition className="group inline-flex items-center gap-2 py-2 text-sm font-semibold text-ink-2 hover:text-ink">
+          <Icon name="arrowLeft" size={16} className="transition-transform duration-200 ease-out group-hover:-translate-x-0.5" />
+          {t("detail.back")}
+        </Link>
+      </Container>
+
+      <Container className="grid grid-cols-1 gap-10 pt-6 pb-12 md:pb-16 lg:grid-cols-12 lg:items-end lg:gap-8">
+        <h1 className="condensed text-display break-words lg:col-span-8">
+          <span className="mast-in block">{p.title}</span>
+        </h1>
+        <dl className="grid grid-cols-1 gap-6 border-t border-ink pt-5 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-1">
+          <div>
+            <dt className="voice text-[1.25rem] leading-none text-ink-2">{t("detail.category")}</dt>
+            <dd className="mt-2 text-lg font-semibold">{p.category}</dd>
+          </div>
+          {p.tags.length > 0 && (
+            <div>
+              <dt className="voice text-[1.25rem] leading-none text-ink-2">{t("detail.stack")}</dt>
+              <dd className="mt-3">
+                <ul className="flex flex-wrap gap-2">
+                  {p.tags.map((tag) => (
+                    <Tag key={tag} label={tag} />
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )}
+        </dl>
+      </Container>
+
+      <Container>
+        <Gallery id={p.id} images={p.images} title={p.title} tone={toneAt(i)} />
+      </Container>
+
+      <Container className="grid grid-cols-1 gap-10 py-20 md:py-28 lg:grid-cols-12 lg:gap-8">
+        <div className="lg:col-span-4">
+          <h2 className="text-headline font-bold">{t("detail.about")}</h2>
+          {p.links.length > 0 && (
+            <div className="mt-8 flex flex-col items-start gap-3">
+              {p.links.map((l, idx) => (
+                <ButtonAnchor
+                  key={l.url}
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant={idx === 0 ? "primary" : "outline"}
+                  icon="arrowUpRight"
+                >
+                  {l.label}
+                </ButtonAnchor>
+              ))}
             </div>
           )}
         </div>
-
-        <div className="w-full lg:w-1/3 p-6 md:p-12 flex flex-col bg-light">
-          <Link to="/progetti" className="font-heading font-black text-xl uppercase text-dark mb-12 hover:text-neon underline">
-            &larr; {isEn ? "Projects Archive" : "Archivio Progetti"}
-          </Link>
-
-          <h3 className="font-heading font-black text-3xl uppercase text-dark mb-6 border-b-4 border-dark pb-2">
-            {isEn ? "Brief & Solution" : "Brief & Soluzione"}
-          </h3>
-
-          <div className="font-body text-xl font-bold  leading-tight text-justify whitespace-pre-wrap mb-12 flex-grow">{displayDescription}</div>
-
-          <div className="mt-auto">
-            <h3 className="font-heading font-black text-2xl uppercase text-dark mb-4">Stack & Tags</h3>
-            <div className="flex flex-wrap gap-2 mb-8">
-              {project.tags.map((tag, index) => (
-                <span key={index} className="border-4 border-dark px-3 py-1 font-heading font-black uppercase text-sm bg-neon text-dark">
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            {displayLinks.length > 0 && (
-              <div className="flex flex-col gap-4">
-                {displayLinks.map((linkItem, index) => (
-                  <a
-                    key={index}
-                    href={linkItem.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`block w-full text-center font-heading font-black text-2xl uppercase p-6 border-4 border-dark shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all ${
-                      index === 0 ? "bg-dark text-neon" : "bg-light text-dark hover:bg-dark hover:text-light"
-                    }`}
-                  >
-                    {linkItem.label} &rarr;
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex max-w-[65ch] flex-col gap-5 lg:col-span-7 lg:col-start-6">
+          {lede && (
+            <p className={lede.length > 280 ? "text-xl leading-relaxed text-ink md:text-[1.375rem]" : "voice text-[1.75rem] leading-snug md:text-[2rem]"}>{lede}</p>
+          )}
+          {body.map((para, i) => (
+            <p key={i} className="text-[1.0625rem] leading-relaxed text-ink-2">
+              {para}
+            </p>
+          ))}
         </div>
-      </div>
-    </div>
+      </Container>
+
+      {next && (
+        <Link to={`/progetti/${next.id}`} viewTransition className="on-blue group block bg-violet text-sand">
+          <Container className="flex items-end justify-between gap-6 py-14 md:py-20">
+            <span className="min-w-0">
+              <span className="voice block text-[1.5rem] leading-none text-lilac">{t("detail.nextProject")}</span>
+              <span className="condensed mt-4 block text-display break-words group-hover:underline group-hover:decoration-4">{next.title}</span>
+            </span>
+            <span
+              aria-hidden="true"
+              className="inline-flex size-16 shrink-0 items-center justify-center rounded-full bg-sand text-night transition-colors duration-200 group-hover:bg-peach md:size-20"
+            >
+              <Icon name="arrowRight" size={32} className="transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-1" />
+            </span>
+          </Container>
+        </Link>
+      )}
+    </article>
   );
+};
+
+const ProjectDetailPage = () => {
+  const { id } = useParams<{ id: string }>();
+  return id ? <Detail key={id} id={id} /> : null;
 };
 
 export default ProjectDetailPage;

@@ -1,97 +1,137 @@
-import { useProjects } from "../../hooks/useProjects";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "../../config/supabase";
+import { useProjects } from "../../hooks/useProjects";
+import { deleteProject, errorMessage, fetchProjects, localize, optimizeProjectImages } from "../../lib/projects";
+import type { Project } from "../../types/portfolio";
+import { Button, ButtonLink } from "../../components/ui/Button";
+import { ErrorNote } from "../../components/ui/Field";
+import Icon from "../../components/ui/Icon";
+import Img from "../../components/ui/Img";
+
+const dateFmt = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", year: "numeric" });
 
 const DashboardPage = () => {
-  // Ora estraiamo anche setProjects dal nostro hook
-  const { projects, setProjects, loading, error } = useProjects();
+  const { projects, setProjects, status, error, retry } = useProjects();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [optimizing, setOptimizing] = useState<string | null>(null);
 
-  const handleDelete = async (id: string, imageUrl?: string) => {
-    // Un minimo di safety net brutalista
-    const isConfirmed = window.confirm("Sei sicuro di voler disintegrare questo progetto? L'azione è irreversibile.");
-    if (!isConfirmed) return;
-
+  const optimizeAll = async () => {
+    if (!window.confirm("Convertire in WebP (max 2400px) tutte le immagini PNG/JPG dei progetti? Gli originali verranno sostituiti.")) return;
+    setActionError(null);
+    let saved = 0;
     try {
-      // 1. Pulizia dello Storage (se esiste un'immagine)
-      if (imageUrl) {
-        // Estraiamo il percorso relativo del file dall'URL pubblico
-        const path = imageUrl.split("portfolio-assets/")[1];
-        if (path) {
-          const { error: storageError } = await supabase.storage.from("portfolio-assets").remove([path]);
-
-          if (storageError) console.error("Errore pulizia bucket:", storageError);
-        }
+      for (const [i, project] of projects.entries()) {
+        setOptimizing(`Ottimizzo ${i + 1} di ${projects.length}: ${project.title}`);
+        saved += await optimizeProjectImages(project);
       }
+      setProjects(await fetchProjects());
+      setOptimizing(`Fatto: risparmiati ${(saved / 1024 / 1024).toFixed(1)} MB.`);
+    } catch (err) {
+      setOptimizing(null);
+      setActionError(`Ottimizzazione interrotta: ${errorMessage(err)}`);
+    }
+  };
 
-      // 2. Eliminazione dal Database
-      const { error: dbError } = await supabase.from("projects").delete().eq("id", id);
+  useEffect(() => {
+    document.title = "Progetti — Admin CPDESIGN";
+  }, []);
 
-      if (dbError) throw dbError;
-
-      // 3. Aggiornamento UI ottimistico (rimuovo l'elemento senza ricaricare la pagina)
-      setProjects(projects.filter((project) => project.id !== id));
-    } catch (err: any) {
-      alert(`[ERRORE CRITICO]: ${err.message}`);
+  const remove = async (project: Project) => {
+    if (!window.confirm(`Eliminare "${project.title}"? Verranno cancellati anche tutti i file caricati. L'operazione non si può annullare.`)) return;
+    setBusyId(project.id);
+    setActionError(null);
+    try {
+      await deleteProject(project);
+      setProjects(projects.filter((p) => p.id !== project.id));
+    } catch (err) {
+      setActionError(`Eliminazione non riuscita: ${errorMessage(err)}`);
+    } finally {
+      setBusyId(null);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-8 border-dark pb-6 mb-12 gap-6">
-        <h1 className="font-heading font-black text-6xl md:text-8xl uppercase tracking-tighter text-dark leading-[0.85] m-0">
-          Gestione
-          <br />
-          Progetti
-        </h1>
-        <Link
-          to="/admin/progetti/nuovo"
-          className="bg-dark text-neon font-heading font-black text-2xl uppercase px-8 py-4 border-4 border-dark shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all whitespace-nowrap"
-        >
-          + Nuovo Progetto
-        </Link>
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-headline font-bold">Progetti</h1>
+          {status === "ready" && <p className="mt-2 text-ink-2 tabular-nums">{projects.length} pubblicati, dal più recente</p>}
+        </div>
+        <ButtonLink to="/admin/progetti/nuovo" icon="plus">
+          Nuovo progetto
+        </ButtonLink>
       </div>
 
-      {loading && (
-        <div className="font-heading font-black text-3xl uppercase bg-dark text-neon p-8 border-8 border-dark animate-pulse">
-          Sincronizzazione dati in corso...
+      {actionError && <ErrorNote>{actionError}</ErrorNote>}
+      {status === "ready" && projects.length > 0 && (
+        <div className="flex flex-col gap-3 bg-paper-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[0.9375rem] text-ink-2" role="status">
+            {optimizing ?? "Immagini pesanti rallentano il sito. I nuovi caricamenti sono già ottimizzati; per quelli vecchi usa questo pulsante una volta."}
+          </p>
+          <Button variant="outline" onClick={optimizeAll} disabled={Boolean(optimizing) && !optimizing?.startsWith("Fatto")}>
+            Ottimizza immagini
+          </Button>
         </div>
       )}
-      {error && <div className="font-heading font-black text-2xl uppercase bg-red-500 text-dark p-8 border-8 border-dark">[ERRORE DI LETTURA]: {error}</div>}
+      {status === "error" && (
+        <div className="flex flex-col items-start gap-4">
+          <ErrorNote>Impossibile leggere i progetti: {error}</ErrorNote>
+          <Button variant="outline" onClick={retry}>
+            Riprova
+          </Button>
+        </div>
+      )}
 
-      {!loading && !error && (
-        <div className="flex flex-col gap-4">
-          {projects.length === 0 ? (
-            <div className="font-heading font-black text-2xl uppercase border-8 border-dark p-12 text-center bg-light">
-              Nessun progetto rilevato. Inizia ad aggiungere materiale.
-            </div>
-          ) : (
-            projects.map((project) => (
-              <div
-                key={project.id}
-                className="border-4 border-dark p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-light hover:bg-dark hover:text-light transition-colors group"
-              >
-                <div className="flex flex-col items-start gap-2">
-                  <span className="font-heading font-black text-sm bg-neon text-dark px-2 border-2 border-dark">{project.category}</span>
-                  <span className="font-heading font-black text-3xl md:text-4xl uppercase leading-none">{project.title}</span>
+      {status === "loading" && (
+        <div className="flex flex-col gap-2" aria-busy="true">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="skeleton h-20" />
+          ))}
+        </div>
+      )}
+
+      {status === "ready" && projects.length === 0 && (
+        <div className="flex flex-col items-start gap-4 border-t-4 border-ink py-10">
+          <p className="text-lg text-ink-2">Ancora nessun progetto. Il primo comparirà subito in home come “Ultimo progetto”.</p>
+          <ButtonLink to="/admin/progetti/nuovo" variant="outline" icon="plus">
+            Crea il primo progetto
+          </ButtonLink>
+        </div>
+      )}
+
+      {status === "ready" && projects.length > 0 && (
+        <ul className="border-t-4 border-ink">
+          {projects.map((project) => {
+            const p = localize(project, "it");
+            const busy = busyId === project.id;
+            return (
+              <li key={project.id} className={`grid grid-cols-[64px_1fr] items-center gap-4 border-b border-rule py-4 sm:grid-cols-[80px_1fr_auto] sm:gap-6 ${busy ? "opacity-50" : ""}`}>
+                <div className="aspect-[4/3] overflow-hidden bg-paper-2">
+                  {p.cover && <Img src={p.cover} sizes="80px" alt="" loading="lazy" className="size-full object-cover" />}
                 </div>
-
-                <div className="flex gap-6 mt-6 md:mt-0 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Link to={`/admin/progetti/modifica/${project.id}`} className="font-heading font-black text-xl uppercase underline hover:text-neon">
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-bold">{p.title}</p>
+                  <p className="truncate text-sm text-ink-3">
+                    {p.category} · {dateFmt.format(new Date(p.createdAt))}
+                    {!project.title_en && <span className="ml-2 text-danger">manca la traduzione EN</span>}
+                  </p>
+                </div>
+                <div className="col-span-2 flex items-center gap-5 text-sm font-semibold sm:col-span-1">
+                  <Link to={`/admin/progetti/modifica/${project.id}`} className="underline-offset-4 hover:underline">
                     Modifica
                   </Link>
-
-                  {/* Il Bottone Cablato */}
-                  <button
-                    onClick={() => handleDelete(project.id, project.image_url)}
-                    className="font-heading font-black text-xl uppercase underline text-red-500 hover:text-red-400"
-                  >
-                    Elimina
+                  <a href={`/progetti/${project.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline-offset-4 hover:underline">
+                    Apri <Icon name="arrowUpRight" size={14} />
+                  </a>
+                  <button type="button" disabled={busy} onClick={() => remove(project)} className="text-danger underline-offset-4 hover:underline disabled:opacity-50">
+                    {busy ? "Elimino…" : "Elimina"}
                   </button>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

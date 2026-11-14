@@ -1,82 +1,703 @@
-/* :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
- */
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource/instrument-serif/latin-400.css";
+@import "@fontsource/instrument-serif/latin-400-italic.css";
 @import "tailwindcss";
+
 @theme {
-  --color-neon: #ccff00;
-  --color-dark: #0a0a0a;
-  --color-light: #fcfcfc;
+  /* Night theme: "Tramonto sullo Ionio".
+     paper = page ground, ink = text. Fixed night/sand stay put inside colour fields and illustrations. */
+  --color-paper: #13161c;
+  --color-paper-2: #1b1f27;
+  --color-paper-3: #232835;
+  --color-ink: #efe9de;
+  --color-ink-2: #cfc9d6;
+  --color-ink-3: #9d98ad;
+  --color-rule: #2c3140;
 
-  --font-heading: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
+  --color-night: #13161c;
+  --color-night-2: #1b1f27;
+  --color-sand: #efe9de;
+  --color-sand-rule: #c9c1b3;
 
-  --shadow-brutal: 8px 8px 0px 0px rgba(10, 10, 10, 1);
-  --shadow-brutal-hover: 12px 12px 0px 0px rgba(10, 10, 10, 1);
-  --shadow-brutal-neon: 8px 8px 0px 0px #ccff00;
+  /* Sunset light */
+  --color-violet: #3b2a6b;
+  --color-violet-glow: #5a3fa0;
+  --color-lilac: #c9b8f5;
+  --color-coral: #e8735a;
+  --color-peach: #f0b8a0;
+  --color-danger: #ff6b6b;
+
+  /* Footer and admin bar */
+  --color-band-hairline: #2c3140;
+  --color-band-muted: #9d98ad;
+  --color-band-soft: #cfc9d6;
+  --color-band-text: #efe9de;
+
+  --font-sans: "Archivo Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+
+  /* Masthead: the cover name, condensed and set to fill the measure */
+  --text-masthead: clamp(3rem, 15vw, 9rem);
+  --text-masthead--line-height: 0.88;
+  --text-masthead--letter-spacing: -0.045em;
+  --text-display: clamp(2.75rem, 1.1rem + 6vw, 6rem);
+  --text-display--line-height: 0.9;
+  --text-display--letter-spacing: -0.02em;
+  --text-headline: clamp(2rem, 1.15rem + 3vw, 3.75rem);
+  --text-headline--line-height: 1;
+  --text-headline--letter-spacing: -0.02em;
+  --text-title: clamp(1.375rem, 1.1rem + 1vw, 2rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.015em;
+  --text-voice: clamp(1.75rem, 1.15rem + 2.2vw, 3.25rem);
+  --text-voice--line-height: 1.05;
+  --text-voice--letter-spacing: -0.01em;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --text-masthead: min(9vw, 9rem);
+  }
+}
+
+/* Page titles share the cover's voice: heavy, sentence case, tightly tracked. */
+@utility condensed {
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+@utility voice {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scrollbar-color: var(--color-ink-3) var(--color-paper);
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-paper);
+  }
+
+  ::selection {
+    background: var(--color-coral);
+    color: var(--color-night);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-lilac);
+    outline-offset: 3px;
+  }
+
+  .on-blue :focus-visible {
+    outline-color: var(--color-peach);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    text-underline-offset: 0.18em;
+    text-decoration-thickness: 1.5px;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-coral);
+  }
+
+  img {
+    color: transparent;
+  }
+}
+
+/* Shared-element continuity between project plates and project detail */
+::view-transition-group(*) {
+  animation-duration: 460ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+::view-transition-old(root) {
+  animation: 160ms ease-out both vt-fade-out;
+}
+::view-transition-new(root) {
+  animation: 280ms var(--ease-out-expo) both vt-fade-in;
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Illustrations: strokes draw in once they enter the viewport.
+   The resting state is the finished drawing; the animation only describes the start,
+   so a skipped or interrupted animation still leaves the picture complete. */
+.illo [data-draw] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.illo.is-in [data-draw] {
+  animation: draw 1400ms var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.illo.is-in [data-pop] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 620ms var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.illo.is-in [data-rise] {
+  animation: rise 900ms var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.illo.is-waiting [data-draw] {
+  stroke-dashoffset: 1;
+}
+.illo.is-waiting [data-pop],
+.illo.is-waiting [data-rise] {
+  opacity: 0;
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-12deg);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* Masthead letters settle in on first paint */
+.mast-in {
+  animation: mast-in 900ms var(--ease-out-expo) backwards;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes mast-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.25em);
+  }
+}
+
+.fade-in {
+  animation: fade-in 700ms var(--ease-out-expo) backwards;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Mobile menu reveal */
+.menu-reveal {
+  animation: menu-reveal 360ms var(--ease-out-expo) backwards;
+}
+@keyframes menu-reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+/* Loading skeleton sweep */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-paper-2) 0%, var(--color-paper-3) 50%, var(--color-paper-2) 100%);
+  background-size: 200% 100%;
+  animation: skeleton 1.4s linear infinite;
+}
+@keyframes skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .illo.is-in [data-draw],
+  .illo.is-in [data-pop],
+  .illo.is-in [data-rise],
+  .mast-in,
+  .fade-in,
+  .menu-reveal,
+  .skeleton {
+    animation: none;
+  }
+  .illo.is-waiting [data-draw] {
+    stroke-dashoffset: 0;
+  }
+  .illo.is-waiting [data-pop],
+  .illo.is-waiting [data-rise] {
+    opacity: 1;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Cover: draggable curve handles. The ring breathes until the first touch, then shows on hover and focus. */
+.cover-handle-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+.cover-curve:not(.is-touched) .cover-handle-ring {
+  animation: handle-breathe 2.4s var(--ease-out-expo) 2.4s infinite;
+}
+.cover-handle:hover .cover-handle-ring,
+.cover-handle:focus-visible .cover-handle-ring {
+  opacity: 1;
+  animation: none;
+}
+.cover-handle:focus-visible .cover-handle-ring {
+  stroke: var(--color-peach);
+}
+@keyframes handle-breathe {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.7);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* Scroll story: each stage reads its own chapter progress (--cp, 0 to 1) from the scroll.
+   Elements carry the point at which they start (--a). Resting value without JS: --cp: 1. */
+.stage {
+  --cp: 1;
+}
+.stage [data-d] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--cp) - var(--a, 0)) / 0.22, 1));
+}
+.stage [data-s] {
+  --t: clamp(0, (var(--cp) - var(--a, 0)) / 0.12, 1);
+  opacity: var(--t);
+  transform: translateY(calc((1 - var(--t)) * 18px));
+}
+.stage [data-p] {
+  --t: clamp(0, (var(--cp) - var(--a, 0)) / 0.1, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: var(--t);
+  transform: scale(calc(0.4 + 0.6 * var(--t)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover-curve .cover-handle-ring {
+    animation: none;
+  }
+  .stage {
+    --cp: 1 !important;
+  }
+}
+
+/* ---------- Atmosphere ---------- */
+.ambient {
+  --mx: 0;
+  --my: 0;
+  background: var(--color-paper);
+}
+.ambient-glow {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.ambient-glow--violet {
+  width: 75vmax;
+  height: 75vmax;
+  left: 30%;
+  top: -35vmax;
+  background: radial-gradient(closest-side, rgb(90 63 160 / 0.55), rgb(59 42 107 / 0.25) 55%, transparent);
+  transform: translate(calc(var(--mx) * -6vw), calc(var(--my) * -6vh));
+  animation: drift-a 38s ease-in-out infinite alternate;
+}
+.ambient-glow--coral {
+  width: 55vmax;
+  height: 55vmax;
+  right: -18vmax;
+  bottom: -22vmax;
+  background: radial-gradient(closest-side, rgb(232 115 90 / 0.32), rgb(232 115 90 / 0.1) 55%, transparent);
+  transform: translate(calc(var(--mx) * 5vw), calc(var(--my) * 5vh));
+  animation: drift-b 46s ease-in-out infinite alternate;
+}
+.ambient-glow--lilac {
+  width: 40vmax;
+  height: 40vmax;
+  left: -14vmax;
+  top: 40%;
+  background: radial-gradient(closest-side, rgb(201 184 245 / 0.14), transparent);
+  transform: translate(calc(var(--mx) * 3vw), calc(var(--my) * 3vh));
+  animation: drift-a 52s ease-in-out infinite alternate-reverse;
+}
+@keyframes drift-a {
+  to {
+    translate: 6vw 8vh;
+  }
+}
+@keyframes drift-b {
+  to {
+    translate: -8vw -6vh;
+  }
+}
+.grain {
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+}
+
+/* ---------- Cursor ---------- */
+html.has-cursor,
+html.has-cursor a,
+html.has-cursor button,
+html.has-cursor [role="slider"],
+html.has-cursor label {
+  cursor: none;
+}
+html.has-cursor input,
+html.has-cursor textarea {
+  cursor: text;
+}
+.cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+.cursor-dot,
+.cursor-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  background: var(--color-coral);
+  transition: opacity 200ms ease-out;
+}
+.cursor-ring__shape {
+  position: absolute;
+  left: -18px;
+  top: -18px;
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(239 233 222 / 0.55);
+  border-radius: 9999px;
+  transition:
+    width 380ms var(--ease-out-expo),
+    height 380ms var(--ease-out-expo),
+    left 380ms var(--ease-out-expo),
+    top 380ms var(--ease-out-expo),
+    background-color 300ms ease-out,
+    border-color 300ms ease-out,
+    opacity 200ms ease-out;
+}
+.cursor-ring__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-night);
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 200ms ease-out;
+}
+.cursor--hover .cursor-ring__shape {
+  left: -28px;
+  top: -28px;
+  width: 56px;
+  height: 56px;
+  border-color: var(--color-coral);
+}
+.cursor--label .cursor-ring__shape {
+  left: -44px;
+  top: -44px;
+  width: 88px;
+  height: 88px;
+  border-color: transparent;
+  background: var(--color-sand);
+}
+.cursor--label .cursor-ring__label {
+  opacity: 1;
+}
+.cursor--label .cursor-dot,
+.cursor--text .cursor-dot,
+.cursor--text .cursor-ring__shape,
+.cursor--hidden .cursor-dot,
+.cursor--hidden .cursor-ring__shape {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient-glow {
+    animation: none;
+  }
+}
+
+/* ---------- Hero: the lens ---------- */
+.hero-stage {
+  --lx: 40%;
+  --ly: 45%;
+  --r: clamp(44px, 4.6vw, 72px);
+  --fs: clamp(3.5rem, 1rem + 10.6vw, 10.5rem);
+  --pad: 2.5rem;
+  touch-action: pan-y;
+  overflow-x: clip;
+}
+.hero-title {
+  position: relative;
+  display: block;
+  font-size: var(--fs);
+  font-weight: 700;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+}
+.hero-line {
+  display: block;
+  white-space: nowrap;
+}
+.hero-line--indent {
+  padding-left: 14%;
+}
+.hero-accent {
+  position: absolute;
+  right: 0;
+  top: 0.78em;
+  font-size: 0.42em;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+/* The code layer: 14 lines of this cover's JSX. Line height is a quarter of the title
+   size minus a little, so line 4 sits on "Carmelo" and line 8 on "Provenzani". */
+.hero-codeblock {
+  --cfs: calc(var(--fs) * 0.1375);
+  --lh: calc(var(--cfs) * 1.6);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--pad) + 0.44 * var(--fs) - 3.5 * var(--lh));
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: max(11px, var(--cfs));
+  font-weight: 500;
+  line-height: max(17.6px, var(--lh));
+  letter-spacing: -0.01em;
+}
+.hero-gutter {
+  display: inline-block;
+  width: 3.2ch;
+  margin-right: 1ch;
+  text-align: right;
+  color: var(--color-ink-3);
+  opacity: 0.55;
+}
+.hero-code {
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--color-night);
+  background-image: radial-gradient(rgb(201 184 245 / 0.22) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  clip-path: circle(var(--r) at var(--lx) var(--ly));
+  transition: clip-path 700ms var(--ease-out-expo);
+}
+.hero-stage:not(.is-revealed) .hero-code {
+  transition: none;
+}
+.hero-stage.is-revealed .hero-code {
+  clip-path: circle(150vmax at var(--lx) var(--ly));
+}
+.hero-lens {
+  position: absolute;
+  left: var(--lx);
+  top: var(--ly);
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  translate: -50% -50%;
+  border-radius: 9999px;
+  pointer-events: none;
+  border: 1px solid rgb(239 233 222 / 0.45);
+  box-shadow:
+    inset 3px 0 0 -1px rgb(232 115 90 / 0.55),
+    inset -3px 0 0 -1px rgb(201 184 245 / 0.55),
+    0 20px 60px -20px rgb(0 0 0 / 0.6);
+  transition: opacity 400ms ease-out;
+}
+.hero-stage.is-revealed .hero-lens {
+  opacity: 0;
+}
+.scroll-cue {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 44px;
+  overflow: hidden;
+  background: rgb(239 233 222 / 0.2);
+}
+.scroll-cue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-coral);
+  animation: cue 1.8s var(--ease-in-out-quart) infinite;
+}
+@keyframes cue {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage:not(.is-revealed) .hero-code,
+  .hero-lens {
+    display: none;
+  }
+  .scroll-cue::after {
+    animation: none;
+  }
+}
+
+/* ---------- Deck ---------- */
+.deck-card {
+  --fly: 0;
+  --depth: 0;
+  --tilt: 1;
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--depth) * 22px - var(--fly) * 115svh)) rotate(calc(var(--tilt) * min(var(--depth), 2) * 1.6deg - var(--fly) * 14deg))
+    scale(calc(1 - min(var(--depth), 3) * 0.05));
+  box-shadow: 0 40px 80px -36px rgb(0 0 0 / 0.75);
+  will-change: transform;
+}
+.deck-stage {
+  filter: drop-shadow(0 18px 30px rgb(0 0 0 / 0.18));
+}
+
+/* ---------- Journey ---------- */
+.journey-head {
+  position: absolute;
+  z-index: 2;
+  width: 14px;
+  height: 14px;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  background: var(--color-coral);
+  box-shadow:
+    0 0 0 6px rgb(232 115 90 / 0.18),
+    0 0 28px 8px rgb(232 115 90 / 0.45);
+  pointer-events: none;
+}
+.journey-stop {
+  position: relative;
+  z-index: 1;
+  opacity: 0.32;
+  transform: translateY(14px);
+  transition:
+    opacity 700ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo);
+}
+.journey-stop.is-reached {
+  opacity: 1;
+  transform: none;
+}
+.journey-art {
+  transform: rotate(-3deg) scale(0.92);
+  transition: transform 900ms var(--ease-out-expo);
+}
+.journey-stop:nth-child(even) .journey-art {
+  transform: rotate(3deg) scale(0.92);
+}
+.journey-stop.is-reached .journey-art {
+  transform: none;
+}
+
+/* ---------- Work index ---------- */
+.work-float {
+  opacity: 0;
+  transform: scale(0.85);
+  clip-path: inset(50% 0 50% 0 round 6px);
+  box-shadow: 0 40px 70px -30px rgb(0 0 0 / 0.7);
+  transition:
+    opacity 300ms ease-out,
+    transform 600ms var(--ease-out-expo),
+    clip-path 600ms var(--ease-out-expo);
+}
+.work-float.is-on {
+  opacity: 1;
+  transform: none;
+  clip-path: inset(0 0 0 0 round 6px);
+}
+
+/* ---------- Contact ---------- */
+.contact-glow {
+  position: absolute;
+  left: 50%;
+  bottom: -30%;
+  width: 90vmax;
+  height: 60vmax;
+  translate: -50% 0;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgb(232 115 90 / 0.22), rgb(90 63 160 / 0.18) 50%, transparent);
+  pointer-events: none;
+}
+@media (max-width: 639px) {
+  .hero-accent {
+    position: static;
+    display: block;
+    margin-top: 0.35em;
+    font-size: 0.42em;
+  }
 }

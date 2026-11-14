@@ -1,31 +1,27 @@
-const Footer = () => {
-  return (
-    <footer className="bg-dark text-light border-t-8 border-dark w-full">
-      <div className="p-6 md:p-12 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="font-heading font-black text-xl md:text-2xl uppercase tracking-tighter">2026 CPDESIGN TUTTI I DIRITTI RISERVATI</div>
+import { useTranslation } from "react-i18next";
+import { SITE } from "../../config/site";
+import Icon from "../ui/Icon";
+import Wordmark from "../ui/Wordmark";
 
-        <div className="flex flex-wrap justify-center gap-4">
-          <a
-            href="https://linkedin.com/in/carmelo-provenzani-78022a371"
-            target="_blank"
-            rel="noreferrer"
-            className="border-4 border-light px-4 py-2 font-heading font-black text-xl uppercase hover:bg-light hover:text-dark transition-colors"
-          >
-            [LINKEDIN]
+const Footer = () => {
+  const { t } = useTranslation();
+  return (
+    <footer className="border-t border-rule bg-paper-2 text-ink">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-10">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+          <Wordmark />
+          <p className="text-sm text-band-muted">{t("footer.rights", { year: new Date().getFullYear() })}</p>
+        </div>
+        <div className="flex items-center gap-6 text-sm font-semibold">
+          <a href={SITE.linkedin} target="_blank" rel="noreferrer" className="text-band-soft hover:text-ink">
+            LinkedIn
           </a>
-          <a
-            href="https://github.com/Carmelo0603"
-            target="_blank"
-            rel="noreferrer"
-            className="border-4 border-light px-4 py-2 font-heading font-black text-xl uppercase hover:bg-light hover:text-dark transition-colors"
-          >
-            [GITHUB]
+          <a href={SITE.github} target="_blank" rel="noreferrer" className="text-band-soft hover:text-ink">
+            GitHub
           </a>
-          <a
-            href="mailto:carmeloprovenzanil@gmail.com"
-            className="border-4 border-light px-4 py-2 font-heading font-black text-xl uppercase hover:bg-light hover:text-dark transition-colors"
-          >
-            [EMAIL]
+          <a href="#top" className="group inline-flex items-center gap-2 text-band-soft hover:text-ink">
+            {t("footer.top")}
+            <Icon name="arrowUp" size={16} className="transition-transform duration-200 ease-out group-hover:-translate-y-0.5" />
           </a>
         </div>
       </div>

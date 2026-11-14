@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# CPDESIGN — Portfolio di Carmelo Provenzani
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Portfolio personale bilingue (IT/EN) con area di amministrazione per gestire i progetti.
 
-Currently, two official plugins are available:
+**Stack:** React 19 · TypeScript · Vite · Tailwind CSS 4 · React Router 7 · i18next · Supabase (database, auth, storage) · EmailJS · Vercel
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Avvio
 
-## React Compiler
-
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Crea `.env.local` con:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_EMAILJS_SERVICE_ID=...
+VITE_EMAILJS_TEMPLATE_ID=...
+VITE_EMAILJS_PUBLIC_KEY=...
+```
+
+Le stesse variabili vanno impostate su Vercel.
+
+## Script
+
+| Comando           | Cosa fa                              |
+| ----------------- | ------------------------------------ |
+| `npm run dev`     | server di sviluppo                   |
+| `npm run build`   | type-check e build di produzione     |
+| `npm run lint`    | ESLint                               |
+| `npm run preview` | anteprima della build                |
+
+## Struttura
+
+```
+src/
+  config/      i18n, client Supabase, link e asset personali (site.ts)
+  locales/     testi IT ed EN
+  lib/         accesso ai dati dei progetti, linee/colori delle competenze
+  hooks/       useProjects, useProject, titolo pagina e lingua
+  components/
+    layout/    header, footer, layout pubblico e admin
+    sections/  diagramma delle linee, competenze, contatti
+    ui/        bottoni, icone, pannello progetto, campi form
+  pages/       home, archivio, dettaglio, chi sono, 404, login
+    admin/     dashboard e form progetto (nuovo/modifica)
+public/cv/     CV in PDF (IT e EN)
+```
+
+## Contenuti
+
+- **Progetti:** si gestiscono da `/admin` (login con l'account Supabase). La prima immagine è la copertina; le immagini caricate vengono ridimensionate e convertite in WebP automaticamente. Il pulsante "Ottimizza immagini" converte quelle caricate in passato.
+- **CV:** sostituisci i PDF in `public/cv/`.
+- **Testi del sito:** `src/locales/it.ts` e `src/locales/en.ts`.
+- **Link personali (email, LinkedIn, GitHub):** `src/config/site.ts`.
+
+## Sicurezza
+
+La chiave anon di Supabase è pubblica per definizione: la protezione dell'area admin dipende dalle policy RLS. Verifica che sulla tabella `projects` e sul bucket `portfolio-assets` lettura sia pubblica e scrittura/eliminazione siano permesse solo agli utenti autenticati.
+
+## Design
+
+Le decisioni visive sono documentate in `DESIGN.md` e `PRODUCT.md`.
